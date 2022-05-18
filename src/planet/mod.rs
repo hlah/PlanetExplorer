@@ -1,7 +1,11 @@
+pub mod height_map;
+
 use bevy::{
     prelude::*,
     render::mesh::{Indices, PrimitiveTopology},
 };
+
+use height_map::HeightMap;
 
 use std::collections::HashMap;
 
@@ -9,13 +13,15 @@ use std::collections::HashMap;
 pub struct Planet {
     radius: f32,
     lod_depth: u32,
+    height_map: Handle<HeightMap>,
 }
 
 impl Planet {
-    pub fn new(radius: f32) -> Self {
+    pub fn new(radius: f32, height_map: Handle<HeightMap>) -> Self {
         Self {
             radius,
             lod_depth: 5,
+            height_map,
         }
     }
 }

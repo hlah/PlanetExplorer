@@ -4,11 +4,13 @@ mod planet;
 use bevy::{prelude::*, window::exit_on_window_close_system};
 
 use camera::*;
-use planet::*;
+use planet::{height_map::*, *};
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
+        .add_asset::<HeightMap>()
+        .init_asset_loader::<HeightMapAssetLoder>()
         .insert_resource(ClearColor(Color::BLACK))
         .insert_resource(Msaa { samples: 4 })
         .insert_resource(AmbientLight {
@@ -24,8 +26,12 @@ fn main() {
         .run();
 }
 
-fn setup(mut commands: Commands) {
-    commands.spawn().insert(Planet::new(1.0));
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+    let height_map_handler = asset_server.load("megt90n000fb.img");
+
+    commands
+        .spawn()
+        .insert(Planet::new(1.0, height_map_handler));
     /*
     commands.spawn_bundle(PointLightBundle {
         transform: Transform::from_translation(Vec3::new(5.0, 5.0, 5.0))
