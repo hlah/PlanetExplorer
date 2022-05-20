@@ -14,11 +14,12 @@ fn main() {
         .insert_resource(ClearColor(Color::BLACK))
         .insert_resource(Msaa { samples: 4 })
         .insert_resource(AmbientLight {
-            brightness: 0.5,
+            brightness: 0.05,
             color: Color::WHITE,
             ..default()
         })
         .add_system(exit_on_window_close_system)
+        .add_system(planet_loading_system)
         .add_system(planet_added_system)
         .add_system(camera_control)
         .add_startup_system(setup)
@@ -29,19 +30,19 @@ fn main() {
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     let height_map_handler = asset_server.load("megt90n000fb.img");
 
+    let radius = 3396000.0;
     commands
         .spawn()
-        .insert(Planet::new(1.0, height_map_handler));
-    /*
+        .insert(Planet::new(radius, height_map_handler));
     commands.spawn_bundle(PointLightBundle {
-        transform: Transform::from_translation(Vec3::new(5.0, 5.0, 5.0))
+        transform: Transform::from_translation(Vec3::ONE * 4.0 * radius)
             .looking_at(Vec3::ZERO, Vec3::Y),
         point_light: PointLight {
             color: Color::WHITE,
-            intensity: 1000.0,
+            range: radius * 10.0,
+            intensity: 100000000000000000.0,
             ..default()
         },
         ..default()
     });
-    */
 }

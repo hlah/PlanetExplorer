@@ -9,6 +9,8 @@ use height_map::HeightMap;
 
 use std::collections::HashMap;
 
+const HEIGHT_SCALLING: f32 = 10.0;
+
 #[derive(Component)]
 pub struct Planet {
     radius: f32,
@@ -16,24 +18,44 @@ pub struct Planet {
     height_map: Handle<HeightMap>,
 }
 
+#[derive(Component)]
+pub struct LoadingPlanet;
+
 impl Planet {
     pub fn new(radius: f32, height_map: Handle<HeightMap>) -> Self {
         Self {
             radius,
-            lod_depth: 5,
+            lod_depth: 10,
             height_map,
         }
     }
 }
 
-pub fn planet_added_system(
+pub fn planet_added_system(mut commands: Commands, planets: Query<Entity, Added<Planet>>) {
+    for entity in planets.iter() {
+        commands.entity(entity).insert(LoadingPlanet);
+    }
+}
+
+pub fn planet_loading_system(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    planets: Query<(Entity, &Planet), Added<Planet>>,
+    height_maps: Res<Assets<HeightMap>>,
+    planets: Query<(Entity, &Planet), With<LoadingPlanet>>,
 ) {
     for (entity, planet) in planets.iter() {
-        build_planet(&mut commands, &mut meshes, &mut materials, entity, planet);
+        if let Some(height_map) = height_maps.get(planet.height_map.clone()) {
+            build_planet(
+                &mut commands,
+                &mut meshes,
+                &mut materials,
+                entity,
+                planet,
+                height_map,
+            );
+            commands.entity(entity).remove::<LoadingPlanet>();
+        }
     }
 }
 
@@ -43,23 +65,24 @@ fn build_planet(
     materials: &mut Assets<StandardMaterial>,
     entity: Entity,
     planet: &Planet,
+    height_map: &HeightMap,
 ) {
     info!("Building planet!!!");
 
-    let (vertices, indices) = build_vertices(planet);
+    let (vertices, normals, indices) = build_vertices(planet, height_map);
 
     let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
     mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, vec![[0.0, 0.0]; vertices.len()]);
-    mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, vertices.clone());
-    mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, vertices);
+    mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, vertices);
+    mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals);
     mesh.set_indices(Some(Indices::U32(indices)));
 
     commands.entity(entity).insert_bundle(PbrBundle {
         mesh: meshes.add(mesh),
         material: materials.add(StandardMaterial {
             base_color: Color::RED,
-            reflectance: 0.0,
-            metallic: 0.0,
+            reflectance: 0.1,
+            metallic: 0.1,
             perceptual_roughness: 0.5,
             ..default()
         }),
@@ -67,7 +90,10 @@ fn build_planet(
     });
 }
 
-fn build_vertices(planet: &Planet) -> (Vec<[f32; 3]>, Vec<u32>) {
+fn build_vertices(
+    planet: &Planet,
+    height_map: &HeightMap,
+) -> (Vec<[f32; 3]>, Vec<[f32; 3]>, Vec<u32>) {
     let mut vertices = initial_vertices();
     let mut triangles = initial_triangles();
 
@@ -90,8 +116,15 @@ fn build_vertices(planet: &Planet) -> (Vec<[f32; 3]>, Vec<u32>) {
     }
 
     let indices = triangles.into_iter().flatten().collect();
-    let vertices = vertices.into_iter().map(|v| v.into()).collect();
-    (vertices, indices)
+    let normals = vertices.iter().map(|v| v.normalize().into()).collect();
+    let vertices = vertices
+        .into_iter()
+        .map(|v| {
+            (v.normalize() * (planet.radius + HEIGHT_SCALLING * height_map.fetch_height_at(v)))
+                .into()
+        })
+        .collect();
+    (vertices, normals, indices)
 }
 
 fn get_middle_vertex(

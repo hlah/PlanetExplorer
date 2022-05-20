@@ -4,7 +4,7 @@ const ROTATION_X_SPEED: f32 = 2.0;
 
 pub fn setup_camera(mut commands: Commands) {
     commands.spawn_bundle(PerspectiveCameraBundle {
-        transform: Transform::from_translation(Vec3::new(0.0, 0.0, 5.0)),
+        transform: Transform::from_translation(Vec3::new(0.0, 0.0, 4.0 * 3396000.0)),
         ..default()
     });
 }
