@@ -66,7 +66,7 @@ impl HeightMap {
 
     fn get_spherical_coord(&self, normalized_position: Vec3) -> (f32, f32) {
         let longitude = normalized_position.x.atan2(normalized_position.z);
-        let latitude = normalized_position.y.asin();
+        let latitude = -normalized_position.y.asin();
         let longitude = ((longitude + PI) / (2.0 * PI)) * self.width as f32;
         let latitude = ((latitude + FRAC_PI_2) / PI) * self.height as f32;
         (longitude, latitude)
