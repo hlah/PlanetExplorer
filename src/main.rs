@@ -40,7 +40,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         point_light: PointLight {
             color: Color::WHITE,
             range: radius * 10.0,
-            intensity: 100000000000000000.0,
+            intensity: 10000000000000000.0,
             ..default()
         },
         ..default()

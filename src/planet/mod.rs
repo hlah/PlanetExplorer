@@ -9,8 +9,6 @@ use height_map::HeightMap;
 
 use std::collections::HashMap;
 
-const HEIGHT_SCALLING: f32 = 10.0;
-
 #[derive(Component)]
 pub struct Planet {
     radius: f32,
@@ -81,13 +79,15 @@ fn build_planet(
         mesh: meshes.add(mesh),
         material: materials.add(StandardMaterial {
             base_color: Color::RED,
-            reflectance: 0.1,
-            metallic: 0.1,
+            reflectance: 0.0,
+            metallic: 0.0,
             perceptual_roughness: 0.5,
             ..default()
         }),
         ..default()
     });
+
+    info!("Building planet: done");
 }
 
 fn build_vertices(
@@ -116,15 +116,15 @@ fn build_vertices(
     }
 
     let indices = triangles.into_iter().flatten().collect();
-    let normals = vertices.iter().map(|v| v.normalize().into()).collect();
-    let vertices = vertices
-        .into_iter()
-        .map(|v| {
-            (v.normalize() * (planet.radius + HEIGHT_SCALLING * height_map.fetch_height_at(v)))
-                .into()
-        })
-        .collect();
-    (vertices, normals, indices)
+    let mut normals = vec![];
+    let mut vertices_with_height = vec![];
+    for vertice in vertices {
+        let (height, normal) = height_map.fetch_relief_at(vertice, planet.radius);
+        normals.push(normal.into());
+        vertices_with_height.push((vertice * (planet.radius + height)).into());
+    }
+
+    (vertices_with_height, normals, indices)
 }
 
 fn get_middle_vertex(

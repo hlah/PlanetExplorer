@@ -4,7 +4,12 @@ use bevy::{
     reflect::TypeUuid,
     utils::BoxedFuture,
 };
+use itertools::Itertools;
+use ordered_float::OrderedFloat;
 use std::f32::consts::{FRAC_PI_2, PI};
+
+const SAMPLE_DIST: f32 = 0.001;
+const HEIGHT_SCALLING: f32 = 10.0;
 
 #[derive(Debug, TypeUuid)]
 #[uuid = "f8a947d6-7b52-4707-bb6c-9c295c9ef3dd"]
@@ -15,11 +20,17 @@ pub struct HeightMap {
 }
 
 impl HeightMap {
-    pub fn fetch_height_at(&self, normalized_position: Vec3) -> f32 {
+    pub fn fetch_relief_at(&self, normalized_position: Vec3, radius: f32) -> (f32, Vec3) {
+        let height = self.get_height_at(normalized_position);
+        let normal = self.get_norm((radius + height) * normalized_position, radius);
+        (height, normal)
+    }
+
+    pub fn get_height_at(&self, normalized_position: Vec3) -> f32 {
         let (longitude, latitude) = self.get_spherical_coord(normalized_position);
         let neghboors = self.get_neighboors(longitude, latitude);
 
-        Self::bilinear_interpolation(longitude, latitude, neghboors)
+        HEIGHT_SCALLING * Self::bilinear_interpolation(longitude, latitude, neghboors)
     }
 
     fn bilinear_interpolation(lon: f32, lat: f32, neghboors: [(f32, f32, f32); 4]) -> f32 {
@@ -65,6 +76,23 @@ impl HeightMap {
         let row = row % self.height;
         let col = col.clamp(0, self.width - 1);
         self.data[row * self.width + col] as f32
+    }
+
+    fn get_norm(&self, pos: Vec3, radius: f32) -> Vec3 {
+        let samples: Vec<Vec3> = vec![Vec3::X, Vec3::Y, Vec3::Z]
+            .iter()
+            .map(|v| (pos + *v * radius * SAMPLE_DIST).normalize())
+            .sorted_by_key(|v| OrderedFloat::from(pos.angle_between(*v)))
+            .skip(1)
+            .map(|v| (radius + self.get_height_at(Vec3::new(v.x, v.y, v.z))) * v)
+            .map(|v| v - pos)
+            .collect();
+
+        let mut norm = samples[0].cross(samples[1]).normalize();
+        if norm.angle_between(pos) > std::f32::consts::PI / 2.0 {
+            norm = -norm;
+        }
+        norm
     }
 }
 
