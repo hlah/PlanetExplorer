@@ -1,10 +1,12 @@
-mod camera;
 mod planet;
+mod player;
 
 use bevy::{prelude::*, window::exit_on_window_close_system};
 
-use camera::*;
 use planet::{height_map::*, *};
+use player::*;
+
+const MARS_RADIUS: f32 = 3396000.0;
 
 fn main() {
     App::new()
@@ -21,25 +23,24 @@ fn main() {
         .add_system(exit_on_window_close_system)
         .add_system(planet_loading_system)
         .add_system(planet_added_system)
-        .add_system(camera_control)
+        .add_system(player_control)
         .add_startup_system(setup)
-        .add_startup_system(setup_camera)
+        .add_startup_system(setup_player)
         .run();
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     let height_map_handler = asset_server.load("megt90n000fb.img");
 
-    let radius = 3396000.0;
     commands
         .spawn()
-        .insert(Planet::new(radius, height_map_handler));
+        .insert(Planet::new(MARS_RADIUS, height_map_handler));
     commands.spawn_bundle(PointLightBundle {
-        transform: Transform::from_translation(Vec3::ONE * 4.0 * radius)
+        transform: Transform::from_translation(Vec3::ONE * 4.0 * MARS_RADIUS)
             .looking_at(Vec3::ZERO, Vec3::Y),
         point_light: PointLight {
             color: Color::WHITE,
-            range: radius * 10.0,
+            range: MARS_RADIUS * 10.0,
             intensity: 10000000000000000.0,
             ..default()
         },
