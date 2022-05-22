@@ -36,22 +36,22 @@ pub fn player_control(
     let mut forward = 0.0;
     let mut side = 0.0;
     let mut zoom = 0.0;
-    if keyboard.pressed(KeyCode::Comma) {
+    if keyboard.pressed(KeyCode::Comma) || keyboard.pressed(KeyCode::Up) {
         forward += 1.0;
     }
-    if keyboard.pressed(KeyCode::O) {
+    if keyboard.pressed(KeyCode::O) || keyboard.pressed(KeyCode::Down) {
         forward -= 1.0;
     }
-    if keyboard.pressed(KeyCode::E) {
+    if keyboard.pressed(KeyCode::E) || keyboard.pressed(KeyCode::Right) {
         side += 1.0;
     }
-    if keyboard.pressed(KeyCode::A) {
+    if keyboard.pressed(KeyCode::A) || keyboard.pressed(KeyCode::Left) {
         side -= 1.0;
     }
-    if keyboard.pressed(KeyCode::Period) {
+    if keyboard.pressed(KeyCode::Period) || keyboard.pressed(KeyCode::Space) {
         zoom += 1.0;
     }
-    if keyboard.pressed(KeyCode::Semicolon) {
+    if keyboard.pressed(KeyCode::Semicolon) || keyboard.pressed(KeyCode::LControl) {
         zoom -= 1.0;
     }
 
