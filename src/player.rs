@@ -7,9 +7,9 @@ pub struct Player;
 #[derive(Component)]
 pub struct PlayerCamera;
 
-const SPEED_FACTOR: f32 = 0.2;
-const ZOOM_FACTOR: f32 = 0.1;
-const ROTATION_SPEED: f32 = 0.1;
+const SPEED_FACTOR: f32 = 0.4;
+const ZOOM_FACTOR: f32 = 0.2;
+const ROTATION_SPEED: f32 = 0.2;
 
 pub fn setup_player(mut commands: Commands) {
     commands

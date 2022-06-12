@@ -9,7 +9,7 @@ use ordered_float::OrderedFloat;
 use std::f32::consts::{FRAC_PI_2, PI};
 
 const SAMPLE_DIST: f32 = 0.001;
-const HEIGHT_SCALLING: f32 = 10.0;
+pub const HEIGHT_SCALLING: f32 = 10.0;
 
 #[derive(Debug, TypeUuid)]
 #[uuid = "f8a947d6-7b52-4707-bb6c-9c295c9ef3dd"]
