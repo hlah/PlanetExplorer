@@ -51,6 +51,7 @@ pub fn planet_loading_system(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<PlanetMaterial>>,
     height_maps: Res<Assets<HeightMap>>,
+    color_mode: Res<ColorMode>,
     planets: Query<(Entity, &Planet), With<LoadingPlanet>>,
 ) {
     for (entity, planet) in planets.iter() {
@@ -61,6 +62,7 @@ pub fn planet_loading_system(
                 &mut materials,
                 entity,
                 planet,
+                &color_mode,
                 height_map,
             );
             commands.entity(entity).remove::<LoadingPlanet>();
@@ -74,6 +76,7 @@ fn build_planet(
     materials: &mut Assets<PlanetMaterial>,
     entity: Entity,
     planet: &Planet,
+    color_mode: &ColorMode,
     height_map: &HeightMap,
 ) {
     info!("Building planet!!!");
@@ -92,7 +95,7 @@ fn build_planet(
         material: materials.add(PlanetMaterial {
             min_altitude: planet.min_altitude * height_map::HEIGHT_SCALLING,
             max_altitude: planet.max_altitude * height_map::HEIGHT_SCALLING,
-            color_mode: ColorMode::Inclination as u32,
+            color_mode: color_mode.clone() as u32,
         }),
         ..default()
     });
