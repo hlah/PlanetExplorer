@@ -19,6 +19,46 @@ pub struct HeightMap {
     data: Vec<i16>,
 }
 
+struct Neighboors {
+    bottom_left: f32,
+    bottom_right: f32,
+    top_left: f32,
+    top_right: f32,
+    relative_lat: f32,
+    relative_lon: f32,
+}
+
+impl Neighboors {
+    fn bilinear_interpolation(&self) -> f32 {
+        let bottom_interpolation =
+            Self::linear_interpolation(self.bottom_left, self.bottom_right, self.relative_lon);
+        let top_interpolation =
+            Self::linear_interpolation(self.top_left, self.top_right, self.relative_lon);
+
+        Self::linear_interpolation(bottom_interpolation, top_interpolation, self.relative_lat)
+    }
+
+    fn linear_interpolation(v1: f32, v2: f32, t: f32) -> f32 {
+        v1 * t + (1.0 - t) * v2
+    }
+
+    fn nearest(&self) -> f32 {
+        if self.relative_lat < 0.5 {
+            self.nearest_horizontal(self.bottom_left, self.bottom_right)
+        } else {
+            self.nearest_horizontal(self.top_left, self.top_right)
+        }
+    }
+
+    fn nearest_horizontal(&self, left: f32, right: f32) -> f32 {
+        if self.relative_lon < 0.5 {
+            left
+        } else {
+            right
+        }
+    }
+}
+
 impl HeightMap {
     pub fn fetch_relief_at(&self, normalized_position: Vec3, radius: f32) -> (f32, Vec3) {
         let height = self.get_height_at(normalized_position);
@@ -30,38 +70,23 @@ impl HeightMap {
         let (longitude, latitude) = self.get_spherical_coord(normalized_position);
         let neghboors = self.get_neighboors(longitude, latitude);
 
-        HEIGHT_SCALLING * Self::bilinear_interpolation(longitude, latitude, neghboors)
+        HEIGHT_SCALLING * neghboors.nearest()
     }
 
-    fn bilinear_interpolation(lon: f32, lat: f32, neghboors: [(f32, f32, f32); 4]) -> f32 {
-        let lat_interpolation_down =
-            Self::linear_interpolation(neghboors[0].2, neghboors[1].2, lat - neghboors[0].1);
-        let lat_interpolation_up =
-            Self::linear_interpolation(neghboors[2].2, neghboors[3].2, lat - neghboors[2].1);
-
-        Self::linear_interpolation(
-            lat_interpolation_down,
-            lat_interpolation_up,
-            lon - neghboors[0].0,
-        )
-    }
-
-    fn linear_interpolation(v1: f32, v2: f32, t: f32) -> f32 {
-        v1 * t + (1.0 - t) * v2
-    }
-
-    fn get_neighboors(&self, longitude: f32, latitude: f32) -> [(f32, f32, f32); 4] {
+    fn get_neighboors(&self, longitude: f32, latitude: f32) -> Neighboors {
         let lo_f = longitude.floor();
         let lo_c = longitude.ceil();
         let la_f = latitude.floor();
         let la_c = latitude.ceil();
 
-        [
-            (lo_f, la_f, self.height_at(la_f as usize, lo_f as usize)),
-            (lo_f, la_c, self.height_at(la_c as usize, lo_f as usize)),
-            (lo_c, la_f, self.height_at(la_f as usize, lo_c as usize)),
-            (lo_c, la_c, self.height_at(la_c as usize, lo_c as usize)),
-        ]
+        Neighboors {
+            bottom_left: self.height_at(la_f as usize, lo_f as usize),
+            bottom_right: self.height_at(la_f as usize, lo_c as usize),
+            top_left: self.height_at(la_c as usize, lo_f as usize),
+            top_right: self.height_at(la_c as usize, lo_c as usize),
+            relative_lat: latitude - la_f,
+            relative_lon: longitude - lo_f,
+        }
     }
 
     fn get_spherical_coord(&self, normalized_position: Vec3) -> (f32, f32) {
