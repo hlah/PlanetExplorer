@@ -6,7 +6,7 @@ The topographic data of mars is obtained from the [The MOLA Mission Experiment G
 
 ## How to use
 
-Create a folder named `assets` and dowload the topographic data from [here](https://pds-geosciences.wustl.edu/mgs/mgs-m-mola-5-megdr-l3-v1/mgsl_300x/meg032/megt90n000fb.img) in it.
+Create a folder named `assets/mars` and dowload the topographic data from [here](https://pds-geosciences.wustl.edu/mgs/mgs-m-mola-5-megdr-l3-v1/mgsl_300x/meg032/megt90n000fb.img) in it.
 
 Then just run the apllication with:
 

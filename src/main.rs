@@ -39,7 +39,7 @@ fn main() {
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let height_map_handler = asset_server.load("megt90n000fb.img");
+    let height_map_handler = asset_server.load("mars/megt90n000fb.img");
     commands.spawn().insert(Planet::new(
         MARS_RADIUS,
         MARS_MIN_ALTITUDE,
