@@ -8,5 +8,3 @@ edition = "2021"
 [dependencies]
 bevy = { version = "0.7", features = ["dynamic"] }
 anyhow = "1.0.56"
-ordered-float = "3.0"
-itertools = "0.10"

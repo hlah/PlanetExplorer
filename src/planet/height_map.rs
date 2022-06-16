@@ -4,8 +4,6 @@ use bevy::{
     reflect::TypeUuid,
     utils::BoxedFuture,
 };
-use itertools::Itertools;
-use ordered_float::OrderedFloat;
 use std::f32::consts::{FRAC_PI_2, PI};
 
 const SAMPLE_DIST: f32 = 0.001;
@@ -104,19 +102,23 @@ impl HeightMap {
     }
 
     fn get_norm(&self, pos: Vec3, radius: f32) -> Vec3 {
-        let samples: Vec<Vec3> = vec![Vec3::X, Vec3::Y, Vec3::Z]
+        let cross = Vec3::Z.cross(pos.normalize());
+        let rotation = if cross.length() > 0.0 {
+            let angle = Vec3::Z.dot(pos.normalize()).acos();
+            Quat::from_axis_angle(cross.normalize(), angle)
+        } else {
+            Quat::IDENTITY
+        };
+
+        let samples: Vec<Vec3> = vec![Vec3::X, Vec3::Y]
             .iter()
-            .map(|v| (pos + *v * radius * SAMPLE_DIST).normalize())
-            .sorted_by_key(|v| OrderedFloat::from(pos.angle_between(*v)))
-            .skip(1)
-            .map(|v| (radius + self.get_height_at(Vec3::new(v.x, v.y, v.z))) * v)
+            .map(|v| rotation * *v)
+            .map(|v| (pos + v * radius * SAMPLE_DIST).normalize())
+            .map(|v| (radius + self.get_height_at(v)) * v)
             .map(|v| v - pos)
             .collect();
 
-        let mut norm = samples[0].cross(samples[1]).normalize();
-        if norm.angle_between(pos) > std::f32::consts::PI / 2.0 {
-            norm = -norm;
-        }
+        let norm = samples[0].cross(samples[1]).normalize();
         norm
     }
 }

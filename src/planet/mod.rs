@@ -21,6 +21,12 @@ pub struct Planet {
 }
 
 #[derive(Component)]
+pub struct PlanetMaterials {
+    standard: Handle<StandardMaterial>,
+    custom: Handle<PlanetMaterial>,
+}
+
+#[derive(Component)]
 pub struct LoadingPlanet;
 
 impl Planet {
@@ -49,31 +55,66 @@ pub fn planet_added_system(mut commands: Commands, planets: Query<Entity, Added<
 pub fn planet_loading_system(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<PlanetMaterial>>,
+    mut standard_materials: ResMut<Assets<StandardMaterial>>,
+    mut custom_materials: ResMut<Assets<PlanetMaterial>>,
     height_maps: Res<Assets<HeightMap>>,
     color_mode: Res<ColorMode>,
     planets: Query<(Entity, &Planet), With<LoadingPlanet>>,
 ) {
     for (entity, planet) in planets.iter() {
         if let Some(height_map) = height_maps.get(planet.height_map.clone()) {
+            let materials = build_materials(
+                &planet,
+                &color_mode,
+                &mut standard_materials,
+                &mut custom_materials,
+            );
+
             build_planet(
                 &mut commands,
                 &mut meshes,
-                &mut materials,
+                &materials,
                 entity,
                 planet,
                 &color_mode,
                 height_map,
             );
-            commands.entity(entity).remove::<LoadingPlanet>();
+
+            commands
+                .entity(entity)
+                .remove::<LoadingPlanet>()
+                .insert(materials);
         }
     }
+}
+
+fn build_materials(
+    planet: &Planet,
+    color_mode: &ColorMode,
+    standard_materials: &mut Assets<StandardMaterial>,
+    custom_materials: &mut Assets<PlanetMaterial>,
+) -> PlanetMaterials {
+    let standard = standard_materials.add(StandardMaterial {
+        base_color: Color::RED,
+        metallic: 0.0,
+        perceptual_roughness: 0.5,
+        reflectance: 0.1,
+        ..default()
+    });
+
+    let custom = custom_materials.add(PlanetMaterial {
+        min_altitude: planet.min_altitude * height_map::HEIGHT_SCALLING,
+        max_altitude: planet.max_altitude * height_map::HEIGHT_SCALLING,
+        color_mode: color_mode.clone() as u32,
+    });
+
+    PlanetMaterials { standard, custom }
 }
 
 fn build_planet(
     commands: &mut Commands,
     meshes: &mut Assets<Mesh>,
-    materials: &mut Assets<PlanetMaterial>,
+    materials: &PlanetMaterials,
     entity: Entity,
     planet: &Planet,
     color_mode: &ColorMode,
@@ -90,15 +131,18 @@ fn build_planet(
     mesh.insert_attribute(ATTRIBUTE_ALTITUDE, altitudes);
     mesh.set_indices(Some(Indices::U32(indices)));
 
-    commands.entity(entity).insert_bundle(MaterialMeshBundle {
-        mesh: meshes.add(mesh),
-        material: materials.add(PlanetMaterial {
-            min_altitude: planet.min_altitude * height_map::HEIGHT_SCALLING,
-            max_altitude: planet.max_altitude * height_map::HEIGHT_SCALLING,
-            color_mode: color_mode.clone() as u32,
-        }),
-        ..default()
-    });
+    commands
+        .entity(entity)
+        .insert(meshes.add(mesh))
+        .insert_bundle(TransformBundle::default())
+        .insert(Visibility::default())
+        .insert(ComputedVisibility::default());
+
+    if color_mode.is_custom() {
+        commands.entity(entity).insert(materials.custom.clone());
+    } else {
+        commands.entity(entity).insert(materials.standard.clone());
+    }
 
     info!("Building planet: done");
 }

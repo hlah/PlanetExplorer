@@ -5,7 +5,7 @@ use bevy::{prelude::*, window::exit_on_window_close_system};
 use planet::{
     graphics::PlanetMaterial,
     height_map::*,
-    view::{update_color_mode, ColorMode},
+    view::{cycle_color_mode, update_color_mode, ColorMode},
     *,
 };
 use player::*;
@@ -20,7 +20,7 @@ fn main() {
         .add_plugin(MaterialPlugin::<PlanetMaterial>::default())
         .add_asset::<HeightMap>()
         .init_asset_loader::<HeightMapAssetLoder>()
-        .insert_resource(ColorMode::Altitude)
+        .insert_resource(ColorMode::Real)
         .insert_resource(ClearColor(Color::BLACK))
         .insert_resource(Msaa { samples: 4 })
         .insert_resource(AmbientLight {
@@ -32,6 +32,7 @@ fn main() {
         .add_system(planet_loading_system)
         .add_system(planet_added_system)
         .add_system(player_control)
+        .add_system(cycle_color_mode)
         .add_system(update_color_mode)
         .add_startup_system(setup)
         .add_startup_system(setup_player)
@@ -46,4 +47,16 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         MARS_MAX_ALTITUDE,
         height_map_handler,
     ));
+
+    commands.spawn_bundle(PointLightBundle {
+        transform: Transform::from_translation(Vec3::ONE * 4.0 * MARS_RADIUS)
+            .looking_at(Vec3::ZERO, Vec3::Y),
+        point_light: PointLight {
+            color: Color::WHITE,
+            range: MARS_RADIUS * 10.0,
+            intensity: 10000000000000000.0,
+            ..default()
+        },
+        ..default()
+    });
 }
